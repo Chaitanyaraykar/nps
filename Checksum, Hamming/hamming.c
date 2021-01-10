@@ -1,119 +1,61 @@
-#include <stdlib.h>
 #include<stdio.h>
-int main()
-{
-    int a[4],b[4],r[3],s[3],i,q[3],c[7];
-    printf("\nenter 4 bit data word:\n");
-    for(i=3;i>=0;i--)
-    {
-    scanf("%d",&a[i]);
-    }
-    r[0]=(a[3]+a[1]+a[0])%2;
-    r[1]=(a[0]+a[2]+a[3])%2;
-    r[2]=(a[1]+a[2]+a[3])%2;
-    printf("\n\nthe 7bit hamming code word: \n");
-    for(i=3;i>=0;i--)
-    {
-    printf("%d\t",a[i]);
-    }
-    for(i=2;i>=0;i--)
-    {
-    printf("%d\t",r[i]);
-    }
-    printf("\n");
-    printf("\nenter the 7bit received codeword: ");
+ 
+int main() {
+    int data[10];
+    int dataatrec[10],c,c1,c2,c0,i;
+ 
+    printf("Enter 4 bits of data one by one\n");
+    scanf("%d",&data[7]); //d3
+    scanf("%d",&data[6]); //d2
+    scanf("%d",&data[5]); //d1
+    scanf("%d",&data[3]); //d0
+ 
+    //Calculation of even parity
+    data[4]=data[5]^data[6]^data[7];
+	data[2]=data[3]^data[6]^data[7];
+	data[1]=data[3]^data[5]^data[7];
+ 
+	printf("\nEncoded data is\n");
+	for(i=7;i>0;i--)
+        printf("%d",data[i]);
+        printf("\n");
+        printf("redundant bits r2r1r0 is %d%d%d \n",data[4],data[2],data[1]);
+ 
+    printf("\n\nEnter received data bits one by one\n");
     for(i=7;i>0;i--)
-    scanf ("%d",&c[i]);
-    b[3]=c[7];b[2]=c[6];b[1]=c[5];b[0]=c[4];
-    r[2]=c[3];r[1]=c[2];r[0]=c[1];
-    //calculating syndrome bits
-    s[0]=(b[0]+b[1]+b[3]+r[0])%2;
-    s[1]=(b[0]+b[2]+b[3]+r[1])%2;
-    s[2]=(b[1]+b[2]+b[3]+r[2])%2;
-    printf("\nsyndrome is: \n");
-    for(i=2;i>=0;i--)
-    {
-    printf("%d",s[i]);
+        scanf("%d",&dataatrec[i]);
+ 
+    c0=dataatrec[3]^dataatrec[5]^dataatrec[7]^dataatrec[1];
+	c1=dataatrec[3]^dataatrec[6]^dataatrec[7]^dataatrec[2];
+	c2=dataatrec[5]^dataatrec[6]^dataatrec[7]^dataatrec[4];
+	c=c2*4+c1*2+c0 ;
+ 
+    if(c==0) {
+		printf("\nNo error while transmission of data\n");
     }
-    if((s[2]==0) && (s[1]==0) && (s[0]==0))
-    printf("\n RECIEVED WORD IS ERROR FREE\n");
-    if((s[2]==1)&&(s[1]==1)&&(s[0]==1))
-    {
-    printf("\nError in received codeword, position- 7th bit from right\n");
-    if(c[7]==0)
-    c[7]=1;
-    else
-    c[7]=0;
-    printf("\n Corrected codeword is\n");
-    for(i=7;i>0;i--)
-    printf("%d \t", c[i]);
-    }
-    if((s[2]==1)&&(s[1]==1)&&(s[0]==0))
-    {
-    printf("\nError in received codeword, Position- 6th bit from right\n");
-    if(c[6]==0)
-    c[6]=1;
-    else
-    c[6]=0;
-    printf("\n Corrected codeword is\n");
-    for(i=7;i>0;i--)
-    printf("%d \t", c[i]);
-    }
-    if((s[2]==1)&&(s[1]==0)&&(s[0]==1))
-    {
-    printf("\nError in received codeword, Position- 5th bit from right\n");
-    if(c[5]==0)
-    c[5]=1;
-    else
-    c[5]=0;
-    printf("\n Corrected codeword is\n");
-    for(i=7;i>0;i--)
-    printf("%d \t", c[i]);
-    }
-    if((s[2]==1)&&(s[1]==0)&&(s[0]==0))
-    {
-    printf("\nError in received codeword, Position- 4th bit from right\n");
-    if(c[4]==0)
-    c[4]=1;
-    else
-    c[4]=0;
-    printf("\n Corrected codeword is\n");
-    for(i=7;i>0;i--)
-    printf("%d \t", c[i]);
-    }
-    if((s[2]==0)&&(s[1]==1)&&(s[0]==1))
-    {
-        printf("\nError in received codeword, Position- 3rd bit from right\n");
-        if(c[3]==0)
-            c[3]=1;
-        else
-            c[3]=0;
-        printf("\n Corrected codeword is\n");
+	else {
+		printf("\nError on position %d",c);
+    	
+		printf("\nData sent : ");
         for(i=7;i>0;i--)
-            printf("%d \t", c[i]);
-    }
-    if((s[2]==0)&&(s[1]==1)&&(s[0]==0))
-    {
-        printf("\nError in received codeword, Position- 2nd bit from right\n");
-        if(c[2]==0)
-            c[2]=1;
-        else
-            c[2]=0;
-        printf("\n Corrected codeword is\n");
+        	printf("%d",data[i]);
+        
+		printf("\nData received : ");
         for(i=7;i>0;i--)
-            printf("%d \t", c[i]);
-    }
-    if((s[2]==0)&&(s[1]==0)&&(s[0]==1))
-    {
-        printf("\nError in received codeword, Position- 1st bit from right\n");
-        if(c[1]==0)
-            c[1] =1;
+        	printf("%d",dataatrec[i]);
+		
+		printf("\nCorrect message is\n");
+ 
+		//if errorneous bit is 0 we complement it else vice versa
+		if(dataatrec[c]==0)
+			dataatrec[c]=1;
         else
-            c[1]=0;
-        printf("\n Corrected codeword is\n");
-        for(i=7;i>0;i--)
-            printf("%d \t", c[i]);
-    }
-printf("\n");
-    return(1);
-}//End of Hamming code program*/
+			dataatrec[c]=0;
+		
+		for (i=7;i>0;i--) {
+			printf("%d",dataatrec[i]);
+		}
+		printf("\n");
+	}
+    return 0;
+}
