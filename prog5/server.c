@@ -1,135 +1,80 @@
-#include <comsoc.h>
-#define BUFFER_SIZE 500
-// handle all children that are returning and collect their returns
-void child_handler(int sig) {
-    pid_t pid;
-    int status;
-    /* EEEEXTEERMINAAATE! */
-    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        printf("G>Child(%d) has exit\n", pid);
+#include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+
+
+int compare_strings(char a[], char b[])
+{
+    int c = 0;
+    while (a[c] == b[c]) 
+    {
+        if (a[c] == '\0' || b[c] == '\0')
+        break;
+        c++;
     }
-}
-
-void respond(int connFd) {
-    printf("I>forking again\n");
-    pid_t pid = fork();
-
-    if (pid == -1) {
-        printf("E> could not fork\n");
-    } else if (pid == 0) {
-        fd_set fdset;
-        char resp[500];
-        int k = 0;
-        FD_ZERO(&fdset);
-        FD_SET(connFd, &fdset);
-
-        uint16_t size = 0;
-        printf("I>waiting for input\n");
-        fflush(stdout);
-        while (select(connFd+1, &fdset, NULL, NULL, NULL)!=-1) {
-            // get size
-            fflush(stdout);
-            if(recv(connFd, &size, sizeof(size),0)!=sizeof(size)){
-                printf("E>ABORTED\n");
-                return;
-            }
-
-            size = ntohs(size);
-            
-            if(recv(connFd, resp, size, 0)!=size){
-                printf("E>ABORTED\n");
-                return;
-            };
-            printf("C>(%d) ",size);
-            fflush(stdout);
-            // print the text received
-            for (k = 0; k < size&& k<BUFFER_SIZE; k++) {
-                printf("%c", resp[k]);
-            }
-            printf("\n");
-
-            fflush(stdout);
-            FD_ZERO(&fdset);
-            FD_SET(connFd, &fdset);
-        }
-
-        printf("E>Got out\n");
-        fflush(stdout);
-    } else {
-        char buffer[BUFFER_SIZE];
-        while (1) {
-            int n = 0, i = 0, j = 0, k = 0;
-            // print output
-            while ((buffer[n++] = getchar()) != '\n')
-                ;
-            buffer[n - 1] = 0;
-            //get len
-            k = strlen(buffer);
-
-            printf("I>Got data from stdin \"%s\",%d\n", buffer, k);
-
-            // send size
-            uint16_t size = htons(k);
-            if (send(connFd, &size, sizeof(size), 0) != sizeof(size)) {
-                // something went wrong
-                printf("E> Closing socket as could not send size\n");
-                close(connFd);return ;
-            }
-
-            // send string
-            if ((i = send(connFd, buffer, k, 0)) != k) {
-                printf("W>Could not send whole string\n");
-            }
-        }
-    }
-
-    close(connFd);
+    if (a[c] == '\0' && b[c] == '\0')
+    return 0;
+    else
+    return -1;
 }
 
 int main() {
-    signal(SIGCHLD, child_handler);
 
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        fprintf(stderr, "E>Failed to allocate socket\n");
-        return E_F;
-    } else {
-        printf("I>Allocated socket %d\n");
-    }
+    int welcomeSocket, Client1, Client2;
+    struct sockaddr_in serverAddr;
+    struct sockaddr_storage serverStorage;
+    socklen_t addr_size;
+    char buffer[1024];
 
-    // init structure
-    struct sockaddr_in address = {.sin_family = AF_INET,
-                                  .sin_addr = {.s_addr = INADDR_ANY},
-                                  .sin_port = htons(PORT)};
 
-    if (bind(sockfd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        fprintf(stderr, "E>failed to bind");
-        return E_F;
-    }
+    welcomeSocket = socket(PF_INET, SOCK_STREAM, 0);
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(7891);
+    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    memset(serverAddr.sin_zero, '\0', sizeof serverAddr.sin_zero);
+    bind(welcomeSocket, (struct sockaddr *) &serverAddr, sizeof(serverAddr));
 
-    if (listen(sockfd, 2) < 0) {
-        fprintf(stderr, "E>Failed to set to listen mode");
-        return E_F;
-    }
 
-    int newSock, pid;
-    socklen_t len;
-    int t;
-    while ((newSock = accept(sockfd, (struct sockaddr*)&address, &len)) >= 0) {
-        pid = fork();
-        if (pid == 0) {
-            printf("%d>Created to respond\n", getpid());
-            respond(newSock);
-            close(newSock);
-            return 0;
-        } else if (pid == -1) {
-            fprintf(stderr, "E>Could not respond\n");
-            close(newSock);
+    if (listen(welcomeSocket,5)==0)
+        printf("Listening\n");
+    else
+        printf("Error\n");
 
-            break;
-        } else {
-            waitpid(-1, &t, WNOHANG);
+
+    addr_size = sizeof serverStorage;
+    Client1 = accept(welcomeSocket, (struct sockaddr *) &serverStorage, &addr_size);
+    Client2 = accept(welcomeSocket, (struct sockaddr *) &serverStorage, &addr_size);
+
+    int cmdEXIT = 0;
+ 
+    while (cmdEXIT == 0)
+    {
+        //recevoir le message de Client1
+        recv(Client1, buffer, 1024, 0);
+        printf ("%s\n", buffer);
+        send(Client2,buffer,1024,0);
+        if (compare_strings(buffer, "exit")==0)
+        {   
+            cmdEXIT = 1;
+        }
+        //sinon
+        else 
+        {
+
+            memset(&buffer[0], 0, sizeof(buffer));
+   
+            recv(Client2, buffer, 1024, 0);
+
+            printf ("%s\n", buffer);
+            send(Client1,buffer,1024,0);
+
+            if (compare_strings(buffer, "exit")==0)
+            {
+                cmdEXIT = 1;
+            }
         }
     }
-    close(sockfd);
+
+    return 0;
 }
